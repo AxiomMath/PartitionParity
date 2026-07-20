@@ -1,0 +1,297 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\HH}{\mathbb{H}}
+\newcommand{\leg}[2]{\left(\frac{#1}{#2}\right)}
+\DeclareMathOperator{\Res}{Res}
+\theoremstyle{definition}
+\newtheorem{defn}{Definition}
+\newtheorem{keyformula}{Key Formula}
+\newtheorem{TV}{The Verification}
+
+
+\begin{document}
+
+The paper (\emph{Parity of the partition function in quadratic progressions}) proves that
+for square-free $1<D\equiv23\pmod{24}$ both parities occur infinitely often among
+$p\bigl((Dm^2+1)/24\bigr)$, $(m,6)=1$. The overall architecture---twisted Borcherds/Heegner
+divisors, harmonic weak Maass forms, the CM and Deligne--Rapoport/Katz--Mazur input, the
+Serre--Tate canonical-lift geometry, and the Galois/propagation machinery---is either classical
+or is the kind of algebraic-geometric and analytic bookkeeping (existence of the Borcherds lift,
+integrality of Fourier coefficients, the shape of the divisor, survival of poles in
+characteristic~$2$) that we take as established. What is genuinely new, and where a hidden sign,
+exponent, root-of-unity phase, or normalization error could enter unnoticed, is a short chain of
+\emph{algebraic} identities: a mod $4$ congruence, the logarithmic derivative of a twisted
+Borcherds product together with its mod $2$ reduction to a partition Lambert series, a local
+residue computation, and an Eisenstein-series coefficient congruence modulo~$2$. We isolate
+exactly those seven identities here (Key Formulas~\ref{KF:mod4}--\ref{KF:FeqE}) and target them for
+machine verification. We do not attempt to formalize the paper as a whole.
+
+Precisely \emph{two} classical inputs are assumed, each entering as a single designated
+hypothesis and never itself reproved: the Durfee-square $q$-series identity (hypothesis
+$\mathtt{hDurfee}$ of Key Formula~\ref{KF:mod4}; Mathlib has no partition generating-function API)
+and the Gauss-sum value, packaged algebraically as $\tau(\chi)^2=-D$ in $\Z[\sqrt{-D}]$
+(hypothesis $\mathtt{hGauss}$ of Key Formula~\ref{KF:logderiv}; convention (C6)). Everything else,
+including the log-derivative expansion of Key Formula~\ref{KF:logderiv} itself, is
+\emph{proved}: that expansion is obtained from a finite-truncation formal logarithmic-derivative
+construction (each $q$-coefficient depends on only finitely many product factors), not assumed as
+a re-export.
+
+Two features make these identities formalizable. First, each is an identity of \emph{formal}
+objects: an equality in $\Z[[q]]$, in the reductions $(\Z/4\Z)[[q]]$ or $(\Z/2\Z)[[q]]$, or---at
+the level of a single meromorphic differential---an equality of Laurent expansions in a local
+coordinate. No analytic limit, and no algebraic-geometric existence statement, enters the
+identities themselves. Second, the ``modular'', ``geometric'', or ``special-function'' inputs each
+identity needs can be introduced as opaque symbols subject only to the finitely many algebraic
+relations actually used (the mock-theta coefficient table, the local factorization of the
+Borcherds product at a pole, the classical Gauss-sum evaluation). We introduce those symbols and
+relations directly, and phrase every Key Formula as a self-contained algebraic equality. The tags
+in brackets name the corresponding statement in the paper.
+
+Throughout, $D>1$ is a square-free integer with $D\equiv23\pmod{24}$, $q$ is a formal variable,
+$\Theta:=q\frac{d}{dq}$, and $\chi:=\leg{-D}{\cdot}$ is the odd primitive quadratic character of
+conductor $D$. We write $p(n)$ for the partition function and $a_f(n)$ for the coefficients of
+Ramanujan's third-order mock theta function $f$.
+
+%==============================================================================
+\section*{Formalization conventions}
+%==============================================================================
+
+These conventions are part of the specification: they fix how the objects are to be modeled, and
+any formalization that departs from them is proving a different statement. They do not weaken any
+Key Formula.
+
+\begin{enumerate}
+\item[(C1)] \textbf{Opaque symbols, not analytic objects.} The mock theta series $f,\omega$, the
+Maass-form coefficient table $C(j;n)$, the Borcherds product $\Psi_D$, its logarithmic derivative
+$F_D$, the differential $\omega_D$, and the Eisenstein forms $E,E_D$ are \emph{opaque parameters}.
+They must \emph{not} be reconstructed from their modular or geometric definitions. Their only
+permitted \emph{assumed} properties are the finitely many algebraic \emph{data} relations written
+for them below---the coefficient table (C4), the single-factor logarithmic-derivative identity of
+Definition~\ref{def:psi}(i), the local factorization $\Psi_D=t^{\pm1}u(t)$ of
+Key Formula~\ref{KF:residue}, and the classical Gauss-sum evaluation (C6). Each such data relation
+is introduced as a \emph{hypothesis} of the statement that uses it. The exact log-derivative
+expansion of Key Formula~\ref{KF:logderiv} is by contrast \emph{not} assumed: it is proved from
+the single-factor data by a finite-truncation formal log-derivative argument (see that Key
+Formula). No summability, convergence, modularity, or divisor-existence claim is ever a proof
+obligation.
+
+\item[(C2)] \textbf{Ambient rings.} Formal-power-series identities live in $\Z[[q]]$; congruences
+modulo $M$ are equalities in $(\Z/M\Z)[[q]]$ obtained by applying the reduction ring map
+$\Z[[q]]\to(\Z/M\Z)[[q]]$ coefficientwise. ``$A\equiv B\pmod M$'' always means this equality of
+reduced series, never a pointwise numerical statement. The only moduli used are $M=4$
+(Key Formula~\ref{KF:mod4}) and $M=2$ (Key Formulas~\ref{KF:lambert}, \ref{KF:eis-mod2},
+\ref{KF:ED-mod2}, \ref{KF:FeqE}).
+
+\item[(C3)] \textbf{Units and reciprocals.} Every power series that is inverted has constant term
+a unit of the coefficient ring. In particular $P(q)$, $f(q)$, and each finite product
+$\prod_{j=1}^m(1-q^j)^{\pm2}$ lie in $1+q\,\Z[[q]]\subset\Z[[q]]^\times$, so their inverses exist
+in $\Z[[q]]$. The reciprocal-stability fact used inside Key Formula~\ref{KF:mod4}---that
+coefficientwise reduction $1+q\,\Z[[q]]\to 1+q(\Z/4\Z)[[q]]$ commutes with inversion---is not a
+separate Key Formula here; it is proved inline as a lemma from the unit-group/ring-map API.
+
+\item[(C4)] \textbf{Pinned data (do not re-derive).} The following are fixed givens, taken as
+named data rather than recomputed:
+\begin{itemize}
+\item the mock-theta coefficient table, eq.~(2.3): for $(m,6)=1$ one has $\overline m\in\{1,5,7,11\}$
+and $C(\overline m;Dm^2)=\varepsilon\,a_f\bigl((Dm^2+1)/24\bigr)$ with $\varepsilon\in\{\pm1\}$
+(sign $+$ for $\overline m\in\{1,7\}$, $-$ for $\overline m\in\{5,11\}$); and $C(\overline m;\cdot)=0$
+whenever $3\mid m$ (i.e.\ $\overline m\in\{3,9\}$);
+\item the congruence $a_f(n)\equiv p(n)\pmod2$, which is the mod-$2$ reduction of
+Key Formula~\ref{KF:mod4};
+\item the value $\tau(\chi)=\sqrt{-D}$ of the Gauss sum, and hence that $\sqrt{-D}$ is a unit at
+every prime above $2$ because $D$ is odd.
+\end{itemize}
+
+\item[(C5)] \textbf{Global side conditions carried everywhere.} Fix once $D>1$ square-free with
+$D\equiv23\pmod{24}$. This forces $-D\equiv1\pmod{24}$ (licensing twisting parameter $r=1$) and
+$-D\equiv1\pmod8$ (so $2$ splits in $\Q(\sqrt{-D})$ and $D\equiv7\pmod8$, hence $D>4$). Admissible
+$m$ means $(m,6)=1$; then $m^2\equiv1\pmod{24}$, so $Dm^2+1\equiv0\pmod{24}$ and $(Dm^2+1)/24\in\Z$.
+These elementary facts travel with every Key Formula that mentions them and are not themselves
+proof obligations beyond their one-line \texttt{ZMod} checks.
+
+\item[(C6)] \textbf{Gauss sum assumed classical.} The evaluation
+$\sum_{b\bmod D}\chi(b)\,e(-bk/D)=\chi(-k)\,\tau(\chi)=-\chi(k)\sqrt{-D}$ (valid for all $k$ since
+$\chi$ is primitive; $\tau(\chi)=\sqrt{-D}$ since $\chi$ is odd) is taken as a cited input, not a
+proof obligation. Reference: H.~Davenport, \emph{Multiplicative Number Theory}, 3rd ed.\ (Springer
+GTM~74), Chapter~2 (``Gauss' Sum'', $|\tau(\chi)|^2=q$ and the sign for real primitive characters)
+and Chapter~9 (primitive characters, the separation $\tau(\chi,k)=\overline{\chi}(k)\tau(\chi)$);
+see also K.~Ireland and M.~Rosen, \emph{A Classical Introduction to Modern Number Theory}, 2nd
+ed., \S6.4. In Lean this enters as the single designated hypothesis $\mathtt{hGauss}$ of
+Key Formula~\ref{KF:logderiv}, packaging $\tau(\chi)$ with the one algebraic relation
+$\tau(\chi)^2=-D$ (concretely, the element $\langle0,1\rangle\in\Z[\sqrt{-D}]$ squares to
+$\langle-D,0\rangle$); no literal real square root is required. This is the second and last of the
+two assumed classical inputs, the first being $\mathtt{hDurfee}$ of Key Formula~\ref{KF:mod4}.
+
+\item[(C7)] \textbf{Statements are conclusions, not hypotheses.} Each Key Formula is the thing to
+be \emph{proved} from the pinned data and the stated hypotheses. The geometric survival facts of
+\S3--\S4 (that the reduced differential has a genuine pole, that pullback stays \'etale at the CM
+point, etc.) are \emph{not} formalized and appear nowhere below; where the paper uses them they
+lie strictly outside this target set. In particular the two parity-elimination
+\emph{contradictions} of \S4 are out of scope; only the formal identity feeding the second one,
+Key Formula~\ref{KF:FeqE}, is in scope.
+\end{enumerate}
+
+%==============================================================================
+\section*{Ground data and definitions}
+%==============================================================================
+
+\begin{defn}[Partition and mock-theta series]\label{def:series}
+In $\Z[[q]]$ set
+\[
+P(q):=\sum_{n\ge0}p(n)q^n=\prod_{n\ge1}\frac{1}{1-q^n},
+\qquad
+f(q):=1+\sum_{n\ge1}\frac{q^{n^2}}{(1+q)^2(1+q^2)^2\cdots(1+q^n)^2}=\sum_{n\ge0}a_f(n)q^n.
+\]
+For $m\ge0$ write $(q;q)_m:=\prod_{j=1}^m(1-q^j)$, with $(q;q)_0=1$, and let
+$\pi_m(q):=1/(q;q)_m\in\Z[[q]]$ be the generating function for partitions into parts $\le m$.
+\end{defn}
+
+\begin{defn}[The twisted Borcherds product and its logarithmic derivative]\label{def:psi}
+With $e(x):=e^{2\pi ix}$ and $\overline m:=m\bmod12$, the twisting factor and product of
+eqs.~(2.4)--(2.5) are
+\[
+P_D(X):=\prod_{b\bmod D}\bigl(1-e(-b/D)X\bigr)^{\leg{-D}{b}},
+\qquad
+\Psi_D(z):=\prod_{m\ge1}P_D(q^m)^{C(\overline m;\,Dm^2)}.
+\]
+These enter the algebra only through: (i) the single-factor logarithmic derivative
+$\Theta\log\bigl(1-e(-b/D)q^m\bigr)=-m\sum_{k\ge1}e(-bk/D)\,q^{mk}$ (a formal identity in the
+coefficient ring adjoined the relevant roots of unity); and (ii) the exponent table $C(\overline
+m;Dm^2)$ of (C4). The normalized logarithmic derivative of eq.~(2.7) is
+\[
+F_D(z):=\frac{1}{\sqrt{-D}}\,\frac{\Theta\Psi_D(z)}{\Psi_D(z)}=\sum_{n\ge1}a_nq^n\in\Z[[q]],
+\]
+which we take to be an integral power series with no constant term.
+\end{defn}
+
+\begin{defn}[Local model of $\Psi_D$ at a divisor point]\label{def:local}
+At a point $P_Q$ of the divisor, with local coordinate $t$, the Borcherds product factors as
+$\Psi_D=t^{\varepsilon}\,u(t)$ with $\varepsilon\in\{+1,-1\}$ and $u$ a unit power series in $t$
+($u(0)\ne0$). This factorization---the only geometric input to the residue computation---is taken
+as a hypothesis; the multiplicity $\varepsilon$ is $\pm1$ by the divisor statement of Theorem~4,
+which we do not prove. The differential is $\omega_D:=F_D(q)\,\frac{dq}{q}=\frac{1}{\sqrt{-D}}\,
+d\log\Psi_D$.
+\end{defn}
+
+\begin{defn}[Eisenstein data]\label{def:eis}
+Let $E_2(z)=1-24\sum_{n\ge1}\sigma_1(n)q^n$, with the convention $\sigma_1(x)=0$ for $x\notin\Z$,
+and $d(u)$ the number-of-divisors function. Define
+\[
+E(z):=\frac{\bigl(E_2(z)-3E_2(3z)\bigr)-2\bigl(E_2(z)-2E_2(2z)\bigr)}{24},
+\qquad
+E_D(z):=\sum_{\delta\mid D}E(\delta z).
+\]
+The membership $E\in M_2(\Gamma_0(6))$, $E_D\in M_2(\Gamma_0(6D))$ is \emph{not} formalized; only
+the $q$-coefficients and their parities below are. Write $\omega(n)$ for the number of distinct
+prime factors of $n$.
+\end{defn}
+
+%==============================================================================
+\section*{The key identities}
+%==============================================================================
+
+
+\begin{keyformula}[The mod-$4$ congruence $P\equiv f$; Lemma~3]\label{KF:mod4}
+In $(\Z/4\Z)[[q]]$,
+\[
+P(q)\equiv f(q)\pmod4 .
+\]
+This is proved from the single assumed identity $\mathtt{hDurfee}$ (the Durfee-square expansion of
+$P$, Lemma~3, taken as classical: no partition generating-function API exists to reprove it)
+together with an inline reciprocal-stability lemma; see the verification.
+\end{keyformula}
+\begin{TV}
+Reducing $\mathtt{hDurfee}$ modulo $4$ and using the factorwise congruence
+$(1-q^j)^2\equiv(1+q^j)^2\pmod4$ (their difference is $4q^j\equiv0$) turns the right-hand side
+into the reduction of $f(q)$. The replacement occurs inside the inverse factors
+$\pi_m^2=(q;q)_m^{-2}$, licensed by the reciprocal-stability lemma: coefficientwise reduction is a
+homomorphism of the unit groups $1+q\,\Z[[q]]\to1+q(\Z/4\Z)[[q]]$, hence commutes with inversion,
+so equal reductions of the constant-term-$1$ bases give equal reductions of their squared
+inverses. That lemma is proved inline from the unit-group/ring-map API, not assumed.
+\end{TV}
+
+
+\begin{keyformula}[Exact log-derivative expansion of $\Psi_D$; Prop.~6, eq.~(2.10)]\label{KF:logderiv}
+Assume the Gauss-sum data $\mathtt{hGauss}$ (C6, $\tau(\chi)^2=-D$), the single-factor
+log-derivative identity of Definition~\ref{def:psi}(i), and the exponent table (C4). Then, as a
+formal identity in $\Z[[q]]$,
+\[
+F_D(q)=\sum_{m\ge1}m\,C(\overline m;Dm^2)\sum_{n\ge1}\leg{-D}{n}q^{mn}.
+\]
+This expansion is \emph{proved} (not assumed): only the three items above are hypotheses; the
+assembly into the double sum is a finite-truncation argument.
+\end{keyformula}
+\begin{TV}
+The formal logarithmic derivative $\operatorname{logDeriv}A:=(\Theta A)\,A^{-1}$ on the unit
+subgroup $1+q\,\Z[[q]]$ is additive on products, $\operatorname{logDeriv}(AB)=
+\operatorname{logDeriv}A+\operatorname{logDeriv}B$, and this extends by finite induction to
+$\operatorname{logDeriv}\prod_{m\le N}f_m=\sum_{m\le N}\operatorname{logDeriv}f_m$. The key
+finiteness: the $q^k$-coefficient of $\operatorname{logDeriv}\Psi_D$ receives contributions only
+from factors $f_m$ with $m\le k$, so at each fixed $k$ the sum is finite and no infinite-product
+convergence obligation arises. Applying the single-factor identity of Definition~\ref{def:psi}(i)
+to each factor, weighting by the exponent $C(\overline m;Dm^2)$ and the outer $m$ from $\Theta$,
+and collapsing the inner root-of-unity sum through $\mathtt{hGauss}$
+($\sum_{b}\chi(b)e(-bk/D)=-\chi(k)\sqrt{-D}$, so the $\frac1{\sqrt{-D}}$ normalization clears the
+constant) yields, after re-indexing $n=mk$, the displayed double sum, verified coefficientwise by
+$\mathtt{PowerSeries.ext}$.
+\end{TV}
+
+\begin{keyformula}[Mod-$2$ reduction to the partition Lambert series; Prop.~6, eq.~(2.9)]\label{KF:lambert}
+Reducing Key Formula~\ref{KF:logderiv} modulo $2$ gives, in $(\Z/2\Z)[[q]]$,
+\[
+F_D(q)\equiv\sum_{\substack{m\ge1\\(m,6)=1}}
+p\!\left(\frac{Dm^2+1}{24}\right)\sum_{\substack{n\ge1\\(n,D)=1}}q^{mn}\pmod2 .
+\]
+\end{keyformula}
+
+\begin{keyformula}[Residue of the logarithmic differential; Cor.~5]\label{KF:residue}
+Assume the local factorization $\Psi_D=t^{\varepsilon}u(t)$ of Definition~\ref{def:local} with
+$\varepsilon\in\{\pm1\}$ and $u$ a local unit. Then, since a unitary multiplier does not affect
+$d\log$,
+\[
+d\log\Psi_D=\varepsilon\,\frac{dt}{t}+d\log u,
+\qquad\text{hence}\qquad
+\Res_{P_Q}(\omega_D)=\frac{\varepsilon}{\sqrt{-D}}=\pm\frac{1}{\sqrt{-D}} .
+\]
+\end{keyformula}
+
+
+\begin{keyformula}[Eisenstein coefficient formula and its mod-$2$ collapse; \S4.2, eq.~(4.2)]\label{KF:eis-mod2}
+With the convention $\sigma_1(x)=0$ for $x\notin\Z$, the $q^n$-coefficient of $E$ from
+Definition~\ref{def:eis} is the integer
+\[
+\sigma_1(n)-4\sigma_1(n/2)+3\sigma_1(n/3),
+\]
+and, writing $n=2^a3^bu$ with $(u,6)=1$, this coefficient is $\equiv d(u)\pmod2$. Consequently, in
+$(\Z/2\Z)[[q]]$,
+\[
+E(z)\equiv\sum_{\substack{m\ge1\\(m,6)=1}}\ \sum_{n\ge1}q^{mn}\pmod2 .
+\]
+\end{keyformula}
+
+
+\begin{keyformula}[The $D$-twist multiplier; \S4.2, eq.~(4.4)]\label{KF:ED-mod2}
+Reducing $E_D=\sum_{\delta\mid D}E(\delta z)$ modulo $2$ using Key Formula~\ref{KF:eis-mod2}, in
+$(\Z/2\Z)[[q]]$,
+\[
+E_D(z)\equiv\sum_{\substack{m\ge1\\(m,6)=1}}\ \sum_{\substack{n\ge1\\(n,D)=1}}q^{mn}\pmod2 .
+\]
+\end{keyformula}
+
+
+\begin{keyformula}[The all-odd identity $F_D\equiv E_D$; \S4.2, eq.~(4.5)]\label{KF:FeqE}
+Suppose $p\bigl((Dm^2+1)/24\bigr)\equiv1\pmod2$ for every admissible $m$. Then Key
+Formulas~\ref{KF:lambert} and~\ref{KF:ED-mod2} have identical right-hand sides in
+$(\Z/2\Z)[[q]]$, whence
+\[
+F_D(q)\equiv E_D(q)\pmod2 .
+\]
+\end{keyformula}
+
+\end{document}
